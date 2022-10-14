@@ -26,7 +26,7 @@
 
 ## Setup
 
-with Visual Studio
+Compiling unsigned driver with Visual Studio
 
 Install [Windows Driver Kit](https://docs.microsoft.com/en-us/windows-hardware/drivers/download-the-wdk)
 
@@ -53,6 +53,7 @@ I was able to create this driver with the help of a bunch of sources. If you see
 * https://j00ru.vexillium.org/syscalls/win32k/64/
 * https://github.com/Zer0Mem0ry/ManualMap
 * https://github.com/nbqofficial/norsefire
+* https://www.unknowncheats.me/
 
 ## License
 
