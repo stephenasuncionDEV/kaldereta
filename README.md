@@ -32,22 +32,12 @@ Install [Windows Driver Kit](https://docs.microsoft.com/en-us/windows-hardware/d
 
 Create `Kernel Mode Drive, Empty (KMDF) project` with the following configuration properties:
 
-|General|C/C++|
-|-------|-----|
-|Configuration Type: Driver|Additional Include Directories: PATH_TO_WINDOW_KITS_FOLDER ex: `C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.19041.0\um`|
-|Platform Toolset: WidnowsKernelModeDriver10.0|Security Check: Disable Security Check|
-||Spectre Mitigation: Disabled|
+|General|C/C++|Linker|Driver Settings|Inf2Cat|Driver Signing|
+|-------|-----|------|---------------|-------|--------------|
+|Configuration Type: Driver|Additional Include Directories: PATH_TO_WINDOW_KITS_FOLDER ex: `C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.19041.0\um`|Entry Point: Driver Entry|Target OS Version: Windows 10 or higher|Run Inf2Cat: No|Sign Mode: Off|
+|Platform Toolset: WidnowsKernelModeDriver10.0|Security Check: Disable Security Check||Target Platform: Universal|
+||Spectre Mitigation: Disabled||Type of driver: KMDF|
 ||Teat Warnings as Errors: No|
-
-|Linker|Driver Settings|
-|------|---------------|
-|Entry Point: Driver Entry|Target OS Version: Windows 10 or higher|
-||Target Platform: Universal|
-||Type of driver: KMDF|
-
-|Inf2Cat|Driver Signing|
-|-------|--------------|
-|Run Inf2Cat: No|Sign Mode: Off|
 
 Once you've buit the driver, Load .sys file with [KDMapper](https://github.com/TheCruZ/kdmapper).
 
