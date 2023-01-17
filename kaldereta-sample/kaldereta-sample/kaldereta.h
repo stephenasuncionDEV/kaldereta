@@ -462,6 +462,16 @@ namespace kdt {
 		keyboardEvent(keyCode, KEY_BREAK);
 	}
 
+	// setCursorPos
+	static void setCursorPos(long x, long y)
+	{
+		KALDERETA_MEMORY m = { 0 };
+		m.setCursorPos = TRUE;
+		m.x = x;
+		m.y = y;
+		callHook(&m);
+	}
+
 	// pattern scan
 	static uintptr_t patternScan(char* pattern, char* mask) {
 		uintptr_t start = baseAddress;

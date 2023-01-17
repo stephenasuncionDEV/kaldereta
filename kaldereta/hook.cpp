@@ -237,5 +237,12 @@ NTSTATUS hook::hookHandler(PVOID calledParam)
 		DbgPrintEx(0, 0, "Kaldereta: [KeyboardEvent] MouseEvent KeyCode: %08X, Flags: %08X\n", pMem->keyCode, pMem->buttonFlags);
 	}
 
+	// setCursorPos
+	if (pMem->setCursorPos != FALSE) {
+		mem::setCursorPos(pMem->x, pMem->y);
+
+		DbgPrintEx(0, 0, "Kaldereta: [SetCursorPos] SetCursorPos X: %u Y: %u\n", pMem->x, pMem->y);
+	}
+
 	return STATUS_SUCCESS;
 }

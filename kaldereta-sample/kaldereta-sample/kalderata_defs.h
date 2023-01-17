@@ -2,6 +2,14 @@
 
 typedef struct __KALDERETA_MEMORY
 {
+	const char* moduleName;
+
+	long x;
+	long y;
+
+	void* output;
+	void* bufferAddress;
+
 	ULONG pid;
 	ULONG protection;
 	ULONG allocationType;
@@ -11,8 +19,6 @@ typedef struct __KALDERETA_MEMORY
 	ULONG64 baseAddress;
 	ULONGLONG imageSize;
 	ULONGLONG size;
-	long x;
-	long y;
 	USHORT buttonFlags;
 	USHORT keyCode;
 
@@ -27,11 +33,7 @@ typedef struct __KALDERETA_MEMORY
 	BOOLEAN readBuffer;
 	BOOLEAN mouseEvent;
 	BOOLEAN keyboardEvent;
-
-	const char* moduleName;
-
-	void* output;
-	void* bufferAddress;
+	BOOLEAN setCursorPos;
 }KALDERETA_MEMORY;
 
 typedef HMODULE(__stdcall* pLoadLibraryA)(LPCSTR);

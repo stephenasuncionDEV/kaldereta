@@ -1,4 +1,5 @@
 #include "memory.h"
+#include <cstdint>
 
 PVOID mem::getModuleBase(const char* moduleName)
 {
@@ -457,4 +458,57 @@ ULONG mem::getProcessId(UNICODE_STRING process_name) {
 	ExFreePoolWithTag(buffer, 'enoN');
 
 	return proc_id;
+}
+
+NTSTATUS mem::findProcessByName(CHAR* process_name, PEPROCESS* process)
+{
+	PEPROCESS sys_process = PsInitialSystemProcess;
+	PEPROCESS cur_entry = sys_process;
+
+	CHAR image_name[15];
+
+	do
+	{
+		RtlCopyMemory((PVOID)(&image_name), (PVOID)((uintptr_t)cur_entry + 0x5A8) /*EPROCESS->ImageFileName*/, sizeof(image_name));
+
+		if (strstr(image_name, process_name))
+		{
+			DWORD active_threads;
+			RtlCopyMemory((PVOID)&active_threads, (PVOID)((uintptr_t)cur_entry + 0x5F0) /*EPROCESS->ActiveThreads*/, sizeof(active_threads));
+			if (active_threads)
+			{
+				*process = cur_entry;
+				return STATUS_SUCCESS;
+			}
+		}
+
+		PLIST_ENTRY list = (PLIST_ENTRY)((uintptr_t)(cur_entry)+0x448) /*EPROCESS->ActiveProcessLinks*/;
+		cur_entry = (PEPROCESS)((uintptr_t)list->Flink - 0x448);
+
+	} while (cur_entry != sys_process);
+
+	return STATUS_NOT_FOUND;
+}
+
+bool mem::setCursorPos(long x, long y)
+{
+	PEPROCESS winlogon_peprocess;
+	NTSTATUS status = findProcessByName((char*)"winlogon.exe", &winlogon_peprocess);
+	if (winlogon_peprocess)
+	{
+		KAPC_STATE apc = { 0 };
+		KeStackAttachProcess(winlogon_peprocess, &apc);
+		uint64_t gptCursorAsync = reinterpret_cast<uint64_t>(getModuleExport("\\SystemRoot\\System32\\win32kbase.sys", "gptCursorAsync"));
+		POINT cursor = *(POINT*)(gptCursorAsync);
+		cursor.x = x;
+		cursor.y = y;
+		*(POINT*)(gptCursorAsync) = cursor;
+		KeUnstackDetachProcess(&apc);
+	}
+
+	if (!NT_SUCCESS(status)) {
+		DbgPrintEx(0, 0, "Kaldereta: [SetCursorPos] Failed, Code: %08X\n", status);
+		return false;
+	}
+	return true;
 }
