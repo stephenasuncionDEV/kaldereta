@@ -318,7 +318,7 @@ NTSTATUS mem::initMouse(PMOUSE_OBJECT mouse_obj)
 	return STATUS_SUCCESS;
 }
 
-bool mem::mouseEvent(MOUSE_OBJECT mouse_obj, long x, long y, USHORT button_flags) {
+bool mem::mouseEvent(MOUSE_OBJECT mouse_obj, USHORT button_flags, long x, long y) {
 	ULONG input_data;
 	KIRQL irql;
 	MOUSE_INPUT_DATA mid = { 0 };

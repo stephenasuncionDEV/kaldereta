@@ -16,7 +16,7 @@ namespace mem {
 	NTSTATUS virtualFree(ULONG64 pid, PVOID address, ULONG free_type, SIZE_T& size_out);
 	NTSTATUS initMouse(PMOUSE_OBJECT mouse_obj);
 	NTSTATUS initKeyboard(PKEYBOARD_OBJECT keyboard_obj);
-	bool mouseEvent(MOUSE_OBJECT mouse_obj, long x, long y, USHORT button_flags);
+	bool mouseEvent(MOUSE_OBJECT mouse_obj, USHORT button_flags, long x, long y);
 	bool keyboardEvent(KEYBOARD_OBJECT keyboard_obj, USHORT key_flags, USHORT button_flags);
 	ULONG getProcessId(UNICODE_STRING process_name);
 }

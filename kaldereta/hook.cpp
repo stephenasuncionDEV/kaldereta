@@ -225,9 +225,9 @@ NTSTATUS hook::hookHandler(PVOID calledParam)
 
 	// mouse event
 	if (pMem->mouseEvent != FALSE) {
-		mem::mouseEvent(mouse_obj, pMem->x, pMem->y, pMem->buttonFlags);
+		mem::mouseEvent(mouse_obj, pMem->buttonFlags, pMem->x, pMem->y);
 
-		DbgPrintEx(0, 0, "Kaldereta: [MouseEvent] MouseEvent Flags: %08X\n", pMem->buttonFlags);
+		DbgPrintEx(0, 0, "Kaldereta: [MouseEvent] MouseEvent Flags: %08X X: %u Y: %u\n", pMem->buttonFlags, pMem->x, pMem->y);
 	}
 
 	// keyboard event
