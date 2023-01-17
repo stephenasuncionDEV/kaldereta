@@ -5,6 +5,12 @@ namespace mem {
 	static PVOID g_KernelBase = NULL;
 	static ULONG g_KernelSize = 0;
 
+	static ULONG imageFileName;
+	static ULONG activeThreads;
+	static ULONG activeProcessLinks;
+
+	void getUserDirectoryTableBaseOffset();
+
 	bool writeToReadOnly(void* address, void* buffer, size_t size);
 	bool readBuffer(HANDLE pid, uintptr_t address, void* buffer, SIZE_T size);
 	bool writeBuffer(HANDLE pid, uintptr_t address, void* buffer, SIZE_T size);

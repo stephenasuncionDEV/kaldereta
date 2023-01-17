@@ -9,6 +9,16 @@
 
 #pragma comment(lib, "ntoskrnl.lib")
 
+#define WINDOWS_1803 17134
+#define WINDOWS_1809 17763
+#define WINDOWS_1903 18362
+#define WINDOWS_1909 18363
+#define WINDOWS_2004 19041
+#define WINDOWS_20H2 19042
+#define WINDOWS_21H1 19043
+#define WINDOWS_21H2 19044
+#define WINDOWS_11 22000
+
 typedef struct __KALDERETA_MEMORY
 {
 	const char* moduleName;

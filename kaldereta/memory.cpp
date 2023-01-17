@@ -460,8 +460,52 @@ ULONG mem::getProcessId(UNICODE_STRING process_name) {
 	return proc_id;
 }
 
+void mem::getUserDirectoryTableBaseOffset()
+{
+	RTL_OSVERSIONINFOW ver = { 0 };
+	RtlGetVersion(&ver);
+
+	DbgPrintEx(0, 0, "Kaldereta: [BuildNumber] Code: %u\n", ver.dwBuildNumber);
+
+	switch (ver.dwBuildNumber)
+	{
+	case WINDOWS_1803:
+	case WINDOWS_1809:
+		imageFileName = 0x450;
+		activeThreads = 0x498;
+		activeProcessLinks = 0x2e8;
+		break;
+	case WINDOWS_1903:
+		imageFileName = 0x450;
+		activeThreads = 0x498;
+		activeProcessLinks = 0x2f0;
+		break;
+	case WINDOWS_1909:
+		imageFileName = 0x450;
+		activeThreads = 0x488;
+		activeProcessLinks = 0x2f0;
+		break;
+	case WINDOWS_2004:
+	case WINDOWS_20H2:
+	case WINDOWS_21H1:
+	case WINDOWS_21H2:
+	case WINDOWS_11:
+		imageFileName = 0x5A8;
+		activeThreads = 0x5F0;
+		activeProcessLinks = 0x448;
+		break;
+	default:
+		imageFileName = 0x5A8;
+		activeThreads = 0x5F0;
+		activeProcessLinks = 0x448;
+		break;
+	}
+}
+
 NTSTATUS mem::findProcessByName(CHAR* process_name, PEPROCESS* process)
 {
+	getUserDirectoryTableBaseOffset();
+
 	PEPROCESS sys_process = PsInitialSystemProcess;
 	PEPROCESS cur_entry = sys_process;
 
@@ -469,12 +513,12 @@ NTSTATUS mem::findProcessByName(CHAR* process_name, PEPROCESS* process)
 
 	do
 	{
-		RtlCopyMemory((PVOID)(&image_name), (PVOID)((uintptr_t)cur_entry + 0x5A8) /*EPROCESS->ImageFileName*/, sizeof(image_name));
+		RtlCopyMemory((PVOID)(&image_name), (PVOID)((uintptr_t)cur_entry + imageFileName) /*EPROCESS->ImageFileName*/, sizeof(image_name));
 
 		if (strstr(image_name, process_name))
 		{
 			DWORD active_threads;
-			RtlCopyMemory((PVOID)&active_threads, (PVOID)((uintptr_t)cur_entry + 0x5F0) /*EPROCESS->ActiveThreads*/, sizeof(active_threads));
+			RtlCopyMemory((PVOID)&active_threads, (PVOID)((uintptr_t)cur_entry + activeThreads) /*EPROCESS->ActiveThreads*/, sizeof(active_threads));
 			if (active_threads)
 			{
 				*process = cur_entry;
@@ -482,8 +526,8 @@ NTSTATUS mem::findProcessByName(CHAR* process_name, PEPROCESS* process)
 			}
 		}
 
-		PLIST_ENTRY list = (PLIST_ENTRY)((uintptr_t)(cur_entry)+0x448) /*EPROCESS->ActiveProcessLinks*/;
-		cur_entry = (PEPROCESS)((uintptr_t)list->Flink - 0x448);
+		PLIST_ENTRY list = (PLIST_ENTRY)((uintptr_t)(cur_entry) + activeProcessLinks) /*EPROCESS->ActiveProcessLinks*/;
+		cur_entry = (PEPROCESS)((uintptr_t)list->Flink - activeProcessLinks);
 
 	} while (cur_entry != sys_process);
 
