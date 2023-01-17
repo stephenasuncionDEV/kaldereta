@@ -22,6 +22,7 @@
     <li>simulate keyboard events</li>
     <li>pattern scan</li>
     <li>manual map x64</li>
+    <li>sendCursorPos</li>
 </ul>
 
 ## Setup
