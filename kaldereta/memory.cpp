@@ -463,48 +463,35 @@ ULONG mem::getProcessId(UNICODE_STRING process_name) {
 NTSTATUS mem::setCursorPos(long x, long y)
 {
 	NTSTATUS status = STATUS_SUCCESS;
-	PEPROCESS winlogon_peprocess = nullptr;
+	PEPROCESS winlogonProcess = nullptr;
 
-	ANSI_STRING AS;
-	UNICODE_STRING process_name;
-	RtlInitAnsiString(&AS, "winlogon.exe");
-	RtlAnsiStringToUnicodeString(&process_name, &AS, TRUE);
-	ULONG pid = mem::getProcessId(process_name);
-	RtlFreeUnicodeString(&process_name);
+	ANSI_STRING processName;
+	UNICODE_STRING processUnicodeName = { 0 };
+	RtlInitAnsiString(&processName, "winlogon.exe");
+	RtlAnsiStringToUnicodeString(&processUnicodeName, &processName, TRUE);
+	ULONG pid = mem::getProcessId(processUnicodeName);
+	RtlFreeUnicodeString(&processUnicodeName);
 
-	if (NT_SUCCESS(PsLookupProcessByProcessId(reinterpret_cast<HANDLE>(pid), &winlogon_peprocess))) {
-		KAPC_STATE apc = { 0 };
-		KeStackAttachProcess(winlogon_peprocess, &apc);
-		uint64_t gptCursorAsync = reinterpret_cast<uint64_t>(getModuleExport("\\SystemRoot\\System32\\win32kbase.sys", "gptCursorAsync"));
-		POINT cursor = *(POINT*)(gptCursorAsync);
-		cursor.x = x;
-		cursor.y = y;
-		*(POINT*)(gptCursorAsync) = cursor;
-		KeUnstackDetachProcess(&apc);
+	if (pid != 0) {
+		if (NT_SUCCESS(PsLookupProcessByProcessId(reinterpret_cast<HANDLE>(pid), &winlogonProcess))) {
+			KAPC_STATE apc = { 0 };
+			KeStackAttachProcess(winlogonProcess, &apc);
+			uint64_t gptCursorAsyncAddr = reinterpret_cast<uint64_t>(getModuleExport("\\SystemRoot\\System32\\win32kbase.sys", "gptCursorAsync"));
+			if (gptCursorAsyncAddr) {
+				POINT cursorPos = *(POINT*)(gptCursorAsyncAddr);
+				cursorPos.x = x;
+				cursorPos.y = y;
+				*(POINT*)(gptCursorAsyncAddr) = cursorPos;
+			}
+			else {
+				status = STATUS_INVALID_PARAMETER;
+			}
+			KeUnstackDetachProcess(&apc);
+		}
+	}
+	else {
+		status = STATUS_INVALID_PARAMETER;
 	}
 
 	return status;
-
-	/*PEPROCESS winlogon_peprocess;
-	NTSTATUS status = findProcessByName((char*)"winlogon.exe", &winlogon_peprocess);
-
-	PsLookupProcessByProcessId((HANDLE)pid, &process);
-
-	if (winlogon_peprocess)
-	{
-		KAPC_STATE apc = { 0 };
-		KeStackAttachProcess(winlogon_peprocess, &apc);
-		uint64_t gptCursorAsync = reinterpret_cast<uint64_t>(getModuleExport("\\SystemRoot\\System32\\win32kbase.sys", "gptCursorAsync"));
-		POINT cursor = *(POINT*)(gptCursorAsync);
-		cursor.x = x;
-		cursor.y = y;
-		*(POINT*)(gptCursorAsync) = cursor;
-		KeUnstackDetachProcess(&apc);
-	}
-
-	if (!NT_SUCCESS(status)) {
-		DbgPrintEx(0, 0, "Kaldereta: [SetCursorPos] Failed, Code: %08X\n", status);
-		return false;
-	}
-	return true;*/
 }
