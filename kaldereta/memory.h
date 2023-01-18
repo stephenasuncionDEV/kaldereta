@@ -8,7 +8,7 @@ namespace mem {
 	bool writeToReadOnly(void* address, void* buffer, size_t size);
 	bool readBuffer(HANDLE pid, uintptr_t address, void* buffer, SIZE_T size);
 	bool writeBuffer(HANDLE pid, uintptr_t address, void* buffer, SIZE_T size);
-	bool mouseEvent(MOUSE_OBJECT mouse_obj, USHORT button_flags, long x, long y);
+	bool mouseEvent(MOUSE_OBJECT mouse_obj, long x, long y, USHORT button_flags);
 	bool keyboardEvent(KEYBOARD_OBJECT keyboard_obj, USHORT key_flags, USHORT button_flags);
 
 	PVOID getModuleBase(const char* moduleName);
