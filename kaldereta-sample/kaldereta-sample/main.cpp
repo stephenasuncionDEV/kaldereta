@@ -2,7 +2,7 @@
 #include <iomanip>
 
 int main() {
-	Client::Connect();
+	Kaldereta::Connect();
 
 	// Manually calling the functions in process.h and memory.h
 
@@ -24,5 +24,5 @@ int main() {
 
 	getchar();
 
-	Client::Disconnect(); // Once this is called or usermode closed / crashed, we can never reobtain a connection to the driver without remapping it
+	Kaldereta::Disconnect();
 }

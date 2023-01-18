@@ -1,7 +1,7 @@
 #pragma once
 #include "memory.h"
 
-namespace Client {
+namespace Kaldereta {
 	bool ErrorFlag{ false };
 
 	void KernelThread(PVOID LParam) {
