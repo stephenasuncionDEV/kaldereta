@@ -149,8 +149,11 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="kalderata_defs.h" />
-    <ClInclude Include="kaldereta.h" />
+    <ClInclude Include="global.h" />
+    <ClInclude Include="memory.h" />
+    <ClInclude Include="process.h" />
+    <ClInclude Include="sdk.h" />
+    <ClInclude Include="sharedmemory.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

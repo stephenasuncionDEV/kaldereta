@@ -1,26 +1,142 @@
 #pragma once
-#include "defs.h"
+#include "process.h"
 
-namespace mem {
-	static PVOID g_KernelBase = NULL;
-	static ULONG g_KernelSize = 0;
+namespace Memory {
 
-	bool writeToReadOnly(void* address, void* buffer, size_t size);
-	bool readBuffer(HANDLE pid, uintptr_t address, void* buffer, SIZE_T size);
-	bool writeBuffer(HANDLE pid, uintptr_t address, void* buffer, SIZE_T size);
-	bool mouseEvent(MOUSE_OBJECT mouse_obj, USHORT button_flags, long x, long y);
-	bool keyboardEvent(KEYBOARD_OBJECT keyboard_obj, USHORT key_flags, USHORT button_flags);
+	template <typename T = PVOID>
+	T Allocate(SIZE_T Size) {
+		return reinterpret_cast<T>(ExAllocatePool(NonPagedPool, Size));
+	}
 
-	PVOID getModuleBase(const char* moduleName);
-	PVOID getModuleExport(const char* moduleName, LPCSTR routineName);
+	VOID Free(PVOID Buffer) {
+		ExFreePool(Buffer);
+	}
 
-	ULONG getProcessId(UNICODE_STRING process_name);
-	ULONG64 getModuleBase64(PEPROCESS proc, UNICODE_STRING moduleName, ULONGLONG& imageSize);
+	BOOLEAN Copy(PVOID Destination, PVOID Source, SIZE_T Size) {
+		SIZE_T BytesRead{ 0 };
+		return NT_SUCCESS(MmCopyVirtualMemory(IoGetCurrentProcess(),
+			Source,
+			IoGetCurrentProcess(),
+			Destination,
+			Size,
+			KernelMode,
+			&BytesRead)) && BytesRead == Size;
+	}
 
-	NTSTATUS virtualProtect(ULONG64 pid, PVOID address, ULONG size, ULONG protection, ULONG& protection_out);
-	NTSTATUS virtualAlloc(ULONG64 pid, PVOID& address, SIZE_T size, ULONG allocation_type, ULONG protection);
-	NTSTATUS virtualFree(ULONG64 pid, PVOID address, ULONG free_type, SIZE_T& size_out);
-	NTSTATUS initMouse(PMOUSE_OBJECT mouse_obj);
-	NTSTATUS initKeyboard(PKEYBOARD_OBJECT keyboard_obj);
-	NTSTATUS setCursorPos(long x, long y);
+	NTSTATUS CopyVirtualMemory(OperationData* Data) {
+		NTSTATUS Status{ STATUS_SUCCESS };
+		PEPROCESS eProcess{ Process::GetProcess(Data->Process.Id) };
+
+		if (eProcess == nullptr) {
+			return STATUS_UNSUCCESSFUL;
+		}
+
+		if (Data->Memory.Copy.ReadOperation) {
+			Status = MmCopyVirtualMemory(eProcess,
+				Data->Memory.Copy.Address,
+				IoGetCurrentProcess(),
+				Data->Memory.Copy.Buffer,
+				Data->Memory.Size,
+				UserMode,
+				&Data->Memory.ReturnLength);
+		}
+		else {
+			Status = MmCopyVirtualMemory(IoGetCurrentProcess(),
+				Data->Memory.Copy.Buffer,
+				eProcess,
+				Data->Memory.Copy.Address,
+				Data->Memory.Size,
+				UserMode,
+				&Data->Memory.ReturnLength);
+		}
+
+		ObfDereferenceObject(eProcess);
+		return Status;
+	}
+
+	NTSTATUS AllocateVirtualMemory(OperationData* Data) {
+		KAPC_STATE Apc{ NULL };
+		PEPROCESS eProcess{ Process::GetProcess(Data->Process.Id) };
+
+		if (eProcess == nullptr) {
+			return STATUS_UNSUCCESSFUL;
+		}
+
+		KeStackAttachProcess(eProcess, &Apc);
+
+		NTSTATUS Status{ ZwAllocateVirtualMemory(ZwCurrentProcess(),
+							 &Data->Memory.Base,
+							 NULL,
+							 &Data->Memory.Size,
+							 Data->Memory.AllocType,
+							 Data->Memory.Protect) };
+
+		KeUnstackDetachProcess(&Apc);
+		ObfDereferenceObject(eProcess);
+		return Status;
+	}
+
+	NTSTATUS FreeVirtualMemory(OperationData* Data) {
+		KAPC_STATE Apc{ NULL };
+		PEPROCESS eProcess{ Process::GetProcess(Data->Process.Id) };
+
+		if (eProcess == nullptr) {
+			return STATUS_UNSUCCESSFUL;
+		}
+
+		KeStackAttachProcess(eProcess, &Apc);
+
+		NTSTATUS Status{ ZwFreeVirtualMemory(ZwCurrentProcess(),
+							 &Data->Memory.Base,
+							 &Data->Memory.Size,
+							 Data->Memory.FreeType) };
+
+		KeUnstackDetachProcess(&Apc);
+		ObfDereferenceObject(eProcess);
+		return Status;
+	}
+
+	NTSTATUS ProtectVirtualMemory(OperationData* Data) {
+		KAPC_STATE Apc{ NULL };
+		PEPROCESS eProcess{ Process::GetProcess(Data->Process.Id) };
+
+		if (eProcess == nullptr) {
+			return STATUS_UNSUCCESSFUL;
+		}
+
+		KeStackAttachProcess(eProcess, &Apc);
+
+		NTSTATUS Status{ ZwProtectVirtualMemory(ZwCurrentProcess(),
+							&Data->Memory.Base,
+							&Data->Memory.Size,
+							Data->Memory.Protect,
+							&Data->Memory.OldProtect) };
+
+		KeUnstackDetachProcess(&Apc);
+		ObfDereferenceObject(eProcess);
+		return Status;
+	}
+
+	NTSTATUS QueryVirtualMemory(OperationData* Data) {
+		NTSTATUS Status{ STATUS_SUCCESS };
+		KAPC_STATE Apc{ 0 };
+		PEPROCESS eProcess{ Process::GetProcess(Data->Process.Id) };
+
+		if (eProcess == nullptr) {
+			return STATUS_UNSUCCESSFUL;
+		}
+
+		KeStackAttachProcess(eProcess, &Apc);
+
+		Status = ZwQueryVirtualMemory(ZwCurrentProcess(),
+			Data->Memory.Base,
+			MemoryBasicInformation,
+			&Data->Memory.MBI,
+			sizeof(Data->Memory.MBI),
+			&Data->Memory.ReturnLength);
+
+		KeUnstackDetachProcess(&Apc);
+		ObfDereferenceObject(eProcess);
+		return Status;
+	}
 }

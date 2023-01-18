@@ -118,13 +118,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="driver.cpp" />
-    <ClCompile Include="hook.cpp" />
-    <ClCompile Include="memory.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="defs.h" />
-    <ClInclude Include="hook.h" />
+    <ClInclude Include="global.h" />
     <ClInclude Include="memory.h" />
+    <ClInclude Include="process.h" />
+    <ClInclude Include="sdk.h" />
+    <ClInclude Include="sharedmemory.h" />
+    <ClInclude Include="system.h" />
+    <ClInclude Include="utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

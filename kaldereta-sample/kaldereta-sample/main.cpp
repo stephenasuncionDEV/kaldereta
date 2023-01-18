@@ -1,62 +1,28 @@
-#include <Windows.h>
-#include <iostream>
-#include "kaldereta.h"
+#include "sdk.h"
+#include <iomanip>
 
 int main() {
-	printf("[-] Kalderata User-Mode Sample\n");
+	Client::Connect();
 
-	std::string PROCESS_NAME = "client.exe";
+	// Manually calling the functions in process.h and memory.h
 
-	printf("[-] Waiting for %s\n", PROCESS_NAME.c_str());
+	DWORD ProcessId{ Process::GetProcessId(L"Notepad.exe") };
+	PVOID BaseAddress{ Process::GetBase(ProcessId) };
+	int ExampleValue{ Memory::Read<int>(ProcessId, BaseAddress) };
 
-	while (!kdt::procID) {
-		kdt::procID = kdt::getProcessId(PROCESS_NAME.c_str());
-		Sleep(10);
-	}
+	std::cout << "0x" << std::hex << BaseAddress << std::endl;
+	std::cout << std::dec << ExampleValue << std::endl;
 
-	Sleep(2000);
+	getchar();
 
-	printf("[-] Found %s\n", PROCESS_NAME.c_str());
+	// Or using a KProcess object
 
-	kdt::baseAddress = kdt::getBaseAddress(PROCESS_NAME.c_str());
-	
-	printf("[-] Process ID: %d\n", kdt::procID);
-	printf("[-] Base Address: %012X\n", kdt::baseAddress);
-	printf("[-] Image Size: %012X\n", kdt::imageSize);
-	
-	/*uint32_t old_protection;
-	kdt::virtualProtect(0x4E36CFE020, PAGE_READWRITE, 0x40, old_protection);
-	std::cout << old_protection << std::endl;*/
+	auto Notepad{ KProcess(L"Notepad.exe") };
+	int ExampleValue2{ Notepad.Read<int>(Notepad.BaseAddress) };
+	std::cout << "0x" << std::hex << Notepad.BaseAddress << std::endl;
+	std::cout << std::dec << ExampleValue2 << std::endl;
 
-	// kdt::virtualAlloc
-	// Note: address parameter could be IN or OUT
-	/*uint64_t allocation_base = NULL;
-	kdt::virtualAlloc(allocation_base, 0x1000, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-	printf("[-] Allocation Base: %012X\n", allocation_base);*/
+	getchar();
 
-	/*kdt::virtualFree(allocation_base, MEM_RELEASE);*/
-
-	/*char buffer[MAX_PATH];
-	kdt::readBuffer(0xA38F5E6C0, buffer, MAX_PATH);
-	std::cout << buffer << std::endl;*/
-
-	/*char newBuffer[11];
-	sprintf(newBuffer, "New String");
-	kdt::writeBuffer(0xA38F5E6C0, newBuffer, 11);*/
-
-	//kdt::click();
-
-	//kdt::keyPress(0x41);
-
-	//kdt::moveTo(500, 500);
-
-	//x64 "C:\\Users\\steph\\Documents\\projects\\others\\ManualMap\\x64\\Release\\SampleDll.dll"
-
-	/*if (!kdt::manualMap("C:\\Users\\steph\\Documents\\projects\\others\\ManualMap\\Release\\SampleDll.dll")) {
-		printf("[-] Manual Map Failed");
-	}*/
-
-	for (;;);
-
-	return 0;
+	Client::Disconnect(); // Once this is called or usermode closed / crashed, we can never reobtain a connection to the driver without remapping it
 }
