@@ -5,18 +5,11 @@ namespace mem {
 	static PVOID g_KernelBase = NULL;
 	static ULONG g_KernelSize = 0;
 
-	static ULONG imageFileName;
-	static ULONG activeThreads;
-	static ULONG activeProcessLinks;
-
-	void getUserDirectoryTableBaseOffset();
-
 	bool writeToReadOnly(void* address, void* buffer, size_t size);
 	bool readBuffer(HANDLE pid, uintptr_t address, void* buffer, SIZE_T size);
 	bool writeBuffer(HANDLE pid, uintptr_t address, void* buffer, SIZE_T size);
 	bool mouseEvent(MOUSE_OBJECT mouse_obj, USHORT button_flags, long x, long y);
 	bool keyboardEvent(KEYBOARD_OBJECT keyboard_obj, USHORT key_flags, USHORT button_flags);
-	bool setCursorPos(long x, long y);
 
 	PVOID getModuleBase(const char* moduleName);
 	PVOID getModuleExport(const char* moduleName, LPCSTR routineName);
@@ -29,5 +22,5 @@ namespace mem {
 	NTSTATUS virtualFree(ULONG64 pid, PVOID address, ULONG free_type, SIZE_T& size_out);
 	NTSTATUS initMouse(PMOUSE_OBJECT mouse_obj);
 	NTSTATUS initKeyboard(PKEYBOARD_OBJECT keyboard_obj);
-	NTSTATUS findProcessByName(CHAR* process_name, PEPROCESS* process);
+	NTSTATUS setCursorPos(long x, long y);
 }

@@ -460,84 +460,36 @@ ULONG mem::getProcessId(UNICODE_STRING process_name) {
 	return proc_id;
 }
 
-void mem::getUserDirectoryTableBaseOffset()
+NTSTATUS mem::setCursorPos(long x, long y)
 {
-	RTL_OSVERSIONINFOW ver = { 0 };
-	RtlGetVersion(&ver);
+	NTSTATUS status = STATUS_SUCCESS;
+	PEPROCESS winlogon_peprocess = nullptr;
 
-	DbgPrintEx(0, 0, "Kaldereta: [BuildNumber] Code: %u\n", ver.dwBuildNumber);
+	ANSI_STRING AS;
+	UNICODE_STRING process_name;
+	RtlInitAnsiString(&AS, "winlogon.exe");
+	RtlAnsiStringToUnicodeString(&process_name, &AS, TRUE);
+	ULONG pid = mem::getProcessId(process_name);
+	RtlFreeUnicodeString(&process_name);
 
-	switch (ver.dwBuildNumber)
-	{
-	case WINDOWS_1803:
-	case WINDOWS_1809:
-		imageFileName = 0x450;
-		activeThreads = 0x498;
-		activeProcessLinks = 0x2e8;
-		break;
-	case WINDOWS_1903:
-		imageFileName = 0x450;
-		activeThreads = 0x498;
-		activeProcessLinks = 0x2f0;
-		break;
-	case WINDOWS_1909:
-		imageFileName = 0x450;
-		activeThreads = 0x488;
-		activeProcessLinks = 0x2f0;
-		break;
-	case WINDOWS_2004:
-	case WINDOWS_20H2:
-	case WINDOWS_21H1:
-	case WINDOWS_21H2:
-	case WINDOWS_11:
-		imageFileName = 0x5A8;
-		activeThreads = 0x5F0;
-		activeProcessLinks = 0x448;
-		break;
-	default:
-		imageFileName = 0x5A8;
-		activeThreads = 0x5F0;
-		activeProcessLinks = 0x448;
-		break;
+	if (NT_SUCCESS(PsLookupProcessByProcessId(reinterpret_cast<HANDLE>(pid), &winlogon_peprocess))) {
+		KAPC_STATE apc = { 0 };
+		KeStackAttachProcess(winlogon_peprocess, &apc);
+		uint64_t gptCursorAsync = reinterpret_cast<uint64_t>(getModuleExport("\\SystemRoot\\System32\\win32kbase.sys", "gptCursorAsync"));
+		POINT cursor = *(POINT*)(gptCursorAsync);
+		cursor.x = x;
+		cursor.y = y;
+		*(POINT*)(gptCursorAsync) = cursor;
+		KeUnstackDetachProcess(&apc);
 	}
-}
 
-NTSTATUS mem::findProcessByName(CHAR* process_name, PEPROCESS* process)
-{
-	getUserDirectoryTableBaseOffset();
+	return status;
 
-	PEPROCESS sys_process = PsInitialSystemProcess;
-	PEPROCESS cur_entry = sys_process;
-
-	CHAR image_name[15];
-
-	do
-	{
-		RtlCopyMemory((PVOID)(&image_name), (PVOID)((uintptr_t)cur_entry + imageFileName) /*EPROCESS->ImageFileName*/, sizeof(image_name));
-
-		if (strstr(image_name, process_name))
-		{
-			DWORD active_threads;
-			RtlCopyMemory((PVOID)&active_threads, (PVOID)((uintptr_t)cur_entry + activeThreads) /*EPROCESS->ActiveThreads*/, sizeof(active_threads));
-			if (active_threads)
-			{
-				*process = cur_entry;
-				return STATUS_SUCCESS;
-			}
-		}
-
-		PLIST_ENTRY list = (PLIST_ENTRY)((uintptr_t)(cur_entry) + activeProcessLinks) /*EPROCESS->ActiveProcessLinks*/;
-		cur_entry = (PEPROCESS)((uintptr_t)list->Flink - activeProcessLinks);
-
-	} while (cur_entry != sys_process);
-
-	return STATUS_NOT_FOUND;
-}
-
-bool mem::setCursorPos(long x, long y)
-{
-	PEPROCESS winlogon_peprocess;
+	/*PEPROCESS winlogon_peprocess;
 	NTSTATUS status = findProcessByName((char*)"winlogon.exe", &winlogon_peprocess);
+
+	PsLookupProcessByProcessId((HANDLE)pid, &process);
+
 	if (winlogon_peprocess)
 	{
 		KAPC_STATE apc = { 0 };
@@ -554,5 +506,5 @@ bool mem::setCursorPos(long x, long y)
 		DbgPrintEx(0, 0, "Kaldereta: [SetCursorPos] Failed, Code: %08X\n", status);
 		return false;
 	}
-	return true;
+	return true;*/
 }
