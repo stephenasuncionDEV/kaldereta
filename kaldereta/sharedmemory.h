@@ -2,7 +2,12 @@
 #include "memory.h"
 #include "system.h"
 
-namespace SharedMemory {
+
+MOUSE_OBJECT mouse_obj = { 0 };
+KEYBOARD_OBJECT keyboard_obj = { 0 };
+
+namespace SharedMemory
+{
 
 	BOOLEAN ReadSharedMemory(PVOID Address, PVOID Buffer, SIZE_T Size) {
 		SIZE_T Bytes{ 0 };
@@ -133,14 +138,49 @@ namespace SharedMemory {
 			SetCode();
 			SetStatus(Active);
 		} break;
-
+		case MouseRequest: {
+			Memory::mouseEvent(mouse_obj, &Params);
+			SetBuffer(Params);
+			SetCode();
+			SetStatus(Active);
+		} break;
+		case KeyboardRequest: {
+			Memory::keyboardEvent(keyboard_obj, &Params);
+			SetBuffer(Params);
+			SetCode();
+			SetStatus(Active);
+		} break;
+		case SetCursorRequest: {
+			Memory::setCursorPos(&Params);
+			SetBuffer(Params);
+			SetCode();
+			SetStatus(Active);
+		} break;
 		default: {
 		} break;
 		}
 	}
 
-	VOID Loop() {
+	VOID Loop()
+	{
 		gProcess = Process::GetProcess(gData.ProcessId);
+
+		if (!mouse_obj.service_callback || !mouse_obj.mouse_device)
+		{
+			Memory::InitializeMouse(&mouse_obj);
+			Utils::GenerateTrampoline(mouse_obj.service_callback, (PVOID*)&mouse_obj.service_callback);
+			if (!mouse_obj.service_callback || !mouse_obj.mouse_device)
+				return;
+
+		}
+
+		if (!keyboard_obj.service_callback || !keyboard_obj.keyboard_device)
+		{
+			Memory::InitializeKeyboard(&keyboard_obj);
+			Utils::GenerateTrampoline(keyboard_obj.service_callback, (PVOID*)&keyboard_obj.service_callback);
+			if (!keyboard_obj.service_callback || !keyboard_obj.keyboard_device)
+				return;
+		}
 
 		if (gProcess == nullptr) {
 			return;

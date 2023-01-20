@@ -1,5 +1,6 @@
 #pragma once
 #include "global.h"
+#include "ldasm.h"
 
 namespace Utils {
 
@@ -81,5 +82,65 @@ namespace Utils {
 		}
 
 		return Match;
+	}
+	ULONG GetCPZ(PUCHAR Address, int mLen)
+	{
+		ldasm_data ld = { 0 };
+		ULONG LenCount = 0, Len = 0;
+
+		while (LenCount < mLen)
+		{
+			Len = ldasm(Address, &ld, TRUE);
+			Address = Address + Len;
+			LenCount = LenCount + Len;
+		}
+
+		return LenCount;
+	}
+	void GenerateTrampoline(IN PVOID FunctionAddress, OUT PVOID* TrampolineAddress) // Bypass For EAC,Vanguard and BE Made by Jenrix
+	{
+		UCHAR jmp_code_orifunc1[] = "\x90\xFF\x25\x00\x00\x00\x00\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF";
+
+		UINT64 tmpv;
+		PVOID HeaderByes, ori_func;
+		ULONG PatchSize = GetCPZ((PUCHAR)FunctionAddress, 33);
+
+		//step 1: Read current data
+		HeaderByes = ExAllocatePool(NonPagedPool, 200);
+		if (!HeaderByes)
+		{
+			DbgPrintEx(0, 0, "Error allocating memory for HeaderByes\n");
+			return;
+		}
+		memcpy(HeaderByes, FunctionAddress, PatchSize);
+
+		//step 2: Create ori function
+		ori_func = ExAllocatePool(NonPagedPool, 100);
+		if (!ori_func)
+		{
+			DbgPrintEx(0, 0, "Error allocating memory for ori_func\n");
+			ExFreePool(HeaderByes);
+			return;
+		}
+		memset(ori_func, 0x90, 100);
+
+		char* tmpb = (char*)ExAllocatePool(NonPagedPool, 80);
+		if (!tmpb)
+		{
+			DbgPrintEx(0, 0, "Error allocating memory for tmpb\n");
+			ExFreePool(HeaderByes);
+			ExFreePool(ori_func);
+			return;
+		}
+		memcpy(tmpb, &jmp_code_orifunc1, 15);
+
+		tmpv = (ULONG64)FunctionAddress + PatchSize;
+		memcpy(tmpb + 7, &tmpv, 8);
+		memcpy((PUCHAR)ori_func, HeaderByes, PatchSize);
+		memcpy((PUCHAR)ori_func + PatchSize, tmpb, 15);
+
+		*TrampolineAddress = ori_func;
+		ExFreePool(tmpb);
+		ExFreePool(HeaderByes);
 	}
 }

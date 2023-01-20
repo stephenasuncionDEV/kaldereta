@@ -3,6 +3,12 @@
 #include <ntddk.h>
 #include <IntSafe.h>
 #include <ntimage.h>
+#include <ntddmou.h>
+#include <ntddkbd.h>
+#include <windef.h>
+#include <cstdint>
+
+
 
 enum Code {
 	Complete,
@@ -17,6 +23,9 @@ enum Code {
 	QVMRequest,
 	ModuleRequest,
 	IndexRequest,
+	MouseRequest,
+	KeyboardRequest,
+	SetCursorRequest,
 };
 
 enum Status {
@@ -37,6 +46,20 @@ typedef struct OperationData {
 		PROCESS_BASIC_INFORMATION PBI;
 	} Process;
 
+	struct {
+		long cursor_x;
+		long cursor_y;
+	} Cursor;
+
+	struct {
+		long x;
+		long y;
+		USHORT button_flags;
+	} Mouse;
+	struct {
+		USHORT keyCode;
+		USHORT button_flags;
+	} Keyboard;
 	struct {
 		SIZE_T Size;
 		SIZE_T ReturnLength;
@@ -77,6 +100,36 @@ PEPROCESS gProcess{};
 DWORD64 gFunc{};
 CHAR* gKernelBase{};
 DWORD ActiveThreadsOffset{ 0x5F0 };
+
+extern "C" POBJECT_TYPE * IoDriverObjectType;
+
+typedef VOID
+(*MouseClassServiceCallback)(
+	PDEVICE_OBJECT DeviceObject,
+	PMOUSE_INPUT_DATA InputDataStart,
+	PMOUSE_INPUT_DATA InputDataEnd,
+	PULONG InputDataConsumed
+	);
+
+typedef VOID
+(*KeyboardClassServiceCallback)(
+	PDEVICE_OBJECT DeviceObject,
+	PKEYBOARD_INPUT_DATA InputDataStart,
+	PKEYBOARD_INPUT_DATA InputDataEnd,
+	PULONG InputDataConsumed
+	);
+
+typedef struct _MOUSE_OBJECT
+{
+	PDEVICE_OBJECT mouse_device;
+	MouseClassServiceCallback service_callback;
+} MOUSE_OBJECT, * PMOUSE_OBJECT;
+
+typedef struct _KEYBOARD_OBJECT
+{
+	PDEVICE_OBJECT keyboard_device;
+	KeyboardClassServiceCallback service_callback;
+} KEYBOARD_OBJECT, * PKEYBOARD_OBJECT;
 
 typedef enum _SYSTEM_INFORMATION_CLASS
 {
@@ -126,7 +179,42 @@ typedef enum _SYSTEM_INFORMATION_CLASS
 	SystemCurrentTimeZoneInformation,
 	SystemLookasideInformation
 } SYSTEM_INFORMATION_CLASS, * PSYSTEM_INFORMATION_CLASS;
-
+typedef struct _SYSTEM_PROCESS_INFORMATION
+{
+	ULONG NextEntryOffset;
+	ULONG NumberOfThreads;
+	LARGE_INTEGER SpareLi1;
+	LARGE_INTEGER SpareLi2;
+	LARGE_INTEGER SpareLi3;
+	LARGE_INTEGER CreateTime;
+	LARGE_INTEGER UserTime;
+	LARGE_INTEGER KernelTime;
+	UNICODE_STRING ImageName;
+	KPRIORITY BasePriority;
+	HANDLE UniqueProcessId;
+	HANDLE InheritedFromUniqueProcessId;
+	ULONG HandleCount;
+	ULONG SessionId;
+	ULONG_PTR PageDirectoryBase;
+	SIZE_T PeakVirtualSize;
+	SIZE_T VirtualSize;
+	ULONG PageFaultCount;
+	SIZE_T PeakWorkingSetSize;
+	SIZE_T WorkingSetSize;
+	SIZE_T QuotaPeakPagedPoolUsage;
+	SIZE_T QuotaPagedPoolUsage;
+	SIZE_T QuotaPeakNonPagedPoolUsage;
+	SIZE_T QuotaNonPagedPoolUsage;
+	SIZE_T PagefileUsage;
+	SIZE_T PeakPagefileUsage;
+	SIZE_T PrivatePageCount;
+	LARGE_INTEGER ReadOperationCount;
+	LARGE_INTEGER WriteOperationCount;
+	LARGE_INTEGER OtherOperationCount;
+	LARGE_INTEGER ReadTransferCount;
+	LARGE_INTEGER WriteTransferCount;
+	LARGE_INTEGER OtherTransferCount;
+} SYSTEM_PROCESS_INFORMATION, * PSYSTEM_PROCESS_INFORMATION;
 typedef struct _PEB_LDR_DATA
 {
 	ULONG Length;
@@ -282,4 +370,23 @@ extern "C"
 			ULONG NewAccessProtection,
 			PULONG OldAccessProtection
 		);
+
+	NTSYSCALLAPI
+		NTSTATUS
+		NTAPI
+		ObReferenceObjectByName(
+			_In_ PUNICODE_STRING ObjectName,
+			_In_ ULONG Attributes,
+			_In_opt_ PACCESS_STATE AccessState,
+			_In_opt_ ACCESS_MASK DesiredAccess,
+			_In_ POBJECT_TYPE ObjectType,
+			_In_ KPROCESSOR_MODE AccessMode,
+			_Inout_opt_ PVOID ParseContext,
+			_Out_ PVOID* Object
+		);
+
+	PVOID NTAPI RtlFindExportedRoutineByName(
+		_In_ PVOID ImageBase,
+		_In_ PCCH RoutineName
+	);
 }

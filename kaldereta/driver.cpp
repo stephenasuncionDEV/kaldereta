@@ -1,8 +1,7 @@
 #include "sdk.h"
 
-extern "C" NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
-{
-	DbgPrintEx(0, 0, "Kaldereta: Version 0.0.2\n");
+NTSTATUS DriverEntry(DRIVER_OBJECT* DriverObject, UNICODE_STRING* RegistryPath) {
+	DbgPrintEx(0, 0, "Kaldereta: Version 0.0.3\n");
 	DbgPrintEx(0, 0, "Kaldereta: Driver Loaded\n");
 
 	return Driver::Initialize();

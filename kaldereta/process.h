@@ -8,7 +8,40 @@ namespace Process {
 		PsLookupProcessByProcessId(reinterpret_cast<HANDLE>(ProcessId), &eProcess);
 		return eProcess;
 	}
+	ULONG GetProcessId(UNICODE_STRING process_name) {
+		ULONG proc_id = 0;
+		NTSTATUS status = STATUS_SUCCESS;
 
+		PVOID buffer = ExAllocatePoolWithTag(NonPagedPool, 1024 * 1024, 'enoN');
+		if (!buffer) {
+			DbgPrintEx(0, 0, "Kaldereta: [ProcessID] Failed 0x1\n");
+			return 0;
+		}
+
+		PSYSTEM_PROCESS_INFORMATION pInfo = (PSYSTEM_PROCESS_INFORMATION)buffer;
+
+		status = ZwQuerySystemInformation(SystemProcessInformation, pInfo, 1024 * 1024, NULL);
+		if (!NT_SUCCESS(status)) {
+			DbgPrintEx(0, 0, "Kaldereta: [ProcessID] Failed 0x2, Code: %08X\n", status);
+			return 0;
+		}
+
+		for (;;) {
+			if (RtlEqualUnicodeString(&pInfo->ImageName, &process_name, TRUE)) {
+				return (ULONG)pInfo->UniqueProcessId;
+			}
+			else if (pInfo->NextEntryOffset) {
+				pInfo = (PSYSTEM_PROCESS_INFORMATION)((PUCHAR)pInfo + pInfo->NextEntryOffset);
+			}
+			else {
+				break;
+			}
+		}
+
+		ExFreePoolWithTag(buffer, 'enoN');
+
+		return proc_id;
+	}
 	NTSTATUS GetBaseAddress(OperationData* Data) {
 		PEPROCESS eProcess{ GetProcess(Data->Process.Id) };
 
