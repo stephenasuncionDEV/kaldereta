@@ -8,6 +8,7 @@ namespace Process {
 		PsLookupProcessByProcessId(reinterpret_cast<HANDLE>(ProcessId), &eProcess);
 		return eProcess;
 	}
+
 	ULONG GetProcessId(UNICODE_STRING process_name) {
 		ULONG proc_id = 0;
 		NTSTATUS status = STATUS_SUCCESS;
@@ -42,6 +43,7 @@ namespace Process {
 
 		return proc_id;
 	}
+
 	NTSTATUS GetBaseAddress(OperationData* Data) {
 		PEPROCESS eProcess{ GetProcess(Data->Process.Id) };
 

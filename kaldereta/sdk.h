@@ -9,8 +9,7 @@ namespace Driver {
 		if (ExGetPreviousMode() != UserMode
 			|| A1 == nullptr
 			|| !Utils::ProbeUserAddress(A1, sizeof(gData), sizeof(DWORD))
-			|| !Memory::Copy(&gData, A1, sizeof(CommunicationData))
-			|| gData.Magic != 0x999) {
+			|| !Memory::Copy(&gData, A1, sizeof(CommunicationData))) {
 
 			// NtConvertBetweenAuxiliaryCounterAndPerformanceCounter() was not called by our usermode client
 			// Call the original EnumerateDebuggingDevices() for whoever called

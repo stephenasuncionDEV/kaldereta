@@ -8,10 +8,9 @@
 #include <windef.h>
 #include <cstdint>
 
-
-
 enum Code {
 	Complete,
+	Failure,
 	BaseRequest,
 	SizeRequest,
 	PebRequest,
@@ -29,13 +28,12 @@ enum Code {
 };
 
 enum Status {
-	Inactive,	// We'll use this status to let the driver know it can sleep for a while
-	Active,		// We'll use this status to let the driver know we may be sending requests any second
-	Waiting,	// We'll use this status to let the driver know we sent a request and are waiting for completion
-	Exit		// We'll use this status to let the driver know it can exit the shared memory loop and untrap our thread
+	Active,
+	Exit
 };
 
 typedef struct OperationData {
+	bool bComplete;
 
 	struct {
 		char* Name;
@@ -85,13 +83,16 @@ typedef struct OperationData {
 	} Module;
 };
 
-typedef struct CommunicationData {
+const SIZE_T numMemoryPools = 10;
 
+typedef struct CommunicationData
+{
 	DWORD	ProcessId;
-	PVOID	SharedMemory;
-	DWORD* pCode;
+	BOOL* bPendingRequest;
+	OperationData* pDataRequest;
+	OperationData* pDataResponse;
+	SHORT* pRequestCode;
 	SHORT* pStatus;
-	DWORD	Magic;
 };
 
 INT64(NTAPI* EnumerateDebuggingDevicesOriginal)(PVOID, PVOID);

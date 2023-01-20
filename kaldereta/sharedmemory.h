@@ -1,169 +1,207 @@
 #pragma once
 #include "memory.h"
 #include "system.h"
-
+#include <cstdint>
 
 MOUSE_OBJECT mouse_obj = { 0 };
 KEYBOARD_OBJECT keyboard_obj = { 0 };
 
 namespace SharedMemory
 {
+	template <typename T>
+	struct Memory_t
+	{
+		T data;
+		SIZE_T size;
+		bool bSuccess;
+	};
 
-	BOOLEAN ReadSharedMemory(PVOID Address, PVOID Buffer, SIZE_T Size) {
-		SIZE_T Bytes{ 0 };
+	template <typename T>
+	Memory_t<T> ReadSharedMemory(PVOID Address, SIZE_T Size = sizeof(T))
+	{
+		SIZE_T Bytes = { 0 };
 
-		if (NT_SUCCESS(MmCopyVirtualMemory(gProcess, Address, IoGetCurrentProcess(), Buffer, Size, KernelMode, &Bytes))) {
-			return TRUE;
-		} return FALSE;
+		Memory_t<T> mem;
+		if (NT_SUCCESS(MmCopyVirtualMemory(gProcess, Address, IoGetCurrentProcess(), static_cast<PVOID>(&mem.data), Size, KernelMode, &Bytes)))
+		{
+			mem.size = Bytes;
+			mem.bSuccess = true;
+			return mem;
+		}
+
+		mem.size = 0;
+		mem.bSuccess = false;
+		return mem;
 	}
 
 	template <typename T>
-	BOOLEAN WriteSharedMemory(PVOID Address, T Buffer, SIZE_T Size = sizeof(T)) {
-		SIZE_T Bytes{ 0 };
+	Memory_t<T> WriteSharedMemory(PVOID Address, T Buffer, SIZE_T Size = sizeof(T))
+	{
+		SIZE_T Bytes = { 0 };
 
-		if (NT_SUCCESS(MmCopyVirtualMemory(IoGetCurrentProcess(), (PVOID)&Buffer, gProcess, Address, Size, KernelMode, &Bytes))) {
-			return TRUE;
-		} return FALSE;
-	}
-
-	BYTE GetStatus() {
-		BYTE CurStatus{ 0 };
-		ReadSharedMemory(gData.pStatus, &CurStatus, sizeof(SHORT));
-		return CurStatus;
-	}
-
-	DWORD GetCode() {
-		DWORD CurCode{ 0 };
-		ReadSharedMemory(gData.pCode, &CurCode, sizeof(DWORD));
-		return CurCode;
-	}
-
-	OperationData GetBuffer() {
-		OperationData CurBuffer{ 0 };
-		ReadSharedMemory(gData.SharedMemory, &CurBuffer, sizeof(OperationData));
-		return CurBuffer;
-	}
-
-	BOOLEAN SetStatus(Status DesiredStatus) {
-		return WriteSharedMemory<SHORT>(gData.pStatus, DesiredStatus);
-	}
-
-	BOOLEAN SetCode() {
-		return WriteSharedMemory<DWORD>(gData.pCode, Complete);
-	}
-
-	BOOLEAN SetBuffer(OperationData Buffer) {
-		return WriteSharedMemory<OperationData>(gData.SharedMemory, Buffer);
-	}
-
-	VOID Respond() {
-		DWORD Code{ GetCode() };
-		OperationData Params{ GetBuffer() };
-
-		switch (Code) {
-
-		case BaseRequest: {
-			Process::GetBaseAddress(&Params);
-			SetBuffer(Params);
-			SetCode();
-			SetStatus(Active);
-		} break;
-
-		case SizeRequest: {
-			Process::GetMainModuleSize(&Params);
-			SetBuffer(Params);
-			SetCode();
-			SetStatus(Active);
-		} break;
-
-		case PebRequest: {
-			Process::GetPeb(&Params);
-			SetBuffer(Params);
-			SetCode();
-			SetStatus(Active);
-		} break;
-
-		case QIPRequest: {
-			Process::QueryInformation(&Params);
-			SetBuffer(Params);
-			SetCode();
-			SetStatus(Active);
-		} break;
-
-		case CopyRequest: {
-			Memory::CopyVirtualMemory(&Params);
-			SetBuffer(Params);
-			SetCode();
-			SetStatus(Active);
-		} break;
-
-		case AVMRequest: {
-			Memory::AllocateVirtualMemory(&Params);
-			SetBuffer(Params);
-			SetCode();
-			SetStatus(Active);
-		} break;
-
-		case FVMRequest: {
-			Memory::FreeVirtualMemory(&Params);
-			SetBuffer(Params);
-			SetCode();
-			SetStatus(Active);
-		} break;
-
-		case PVMRequest: {
-			Memory::ProtectVirtualMemory(&Params);
-			SetBuffer(Params);
-			SetCode();
-			SetStatus(Active);
-		} break;
-
-		case QVMRequest: {
-			Memory::QueryVirtualMemory(&Params);
-			SetBuffer(Params);
-			SetCode();
-			SetStatus(Active);
-		} break;
-
-		case ModuleRequest: {
-			Process::GetModuleInfo(&Params);
-			SetBuffer(Params);
-			SetCode();
-			SetStatus(Active);
-		} break;
-
-		case IndexRequest: {
-			Process::GetModuleInfoByIndex(&Params);
-			SetBuffer(Params);
-			SetCode();
-			SetStatus(Active);
-		} break;
-		case MouseRequest: {
-			Memory::mouseEvent(mouse_obj, &Params);
-			SetBuffer(Params);
-			SetCode();
-			SetStatus(Active);
-		} break;
-		case KeyboardRequest: {
-			Memory::keyboardEvent(keyboard_obj, &Params);
-			SetBuffer(Params);
-			SetCode();
-			SetStatus(Active);
-		} break;
-		case SetCursorRequest: {
-			Memory::setCursorPos(&Params);
-			SetBuffer(Params);
-			SetCode();
-			SetStatus(Active);
-		} break;
-		default: {
-		} break;
+		Memory_t<T> mem;
+		if (NT_SUCCESS(MmCopyVirtualMemory(IoGetCurrentProcess(), (PVOID)&Buffer, gProcess, Address, Size, KernelMode, &Bytes)))
+		{
+			mem.size = Bytes;
+			mem.bSuccess = true;
+			return mem;
 		}
+
+		mem.size = 0;
+		mem.bSuccess = false;
+		return mem;
+	}
+
+	bool SetRequestCode(SIZE_T RequestID, Code code)
+	{
+		auto mem = WriteSharedMemory<SHORT>((PVOID)((PBYTE)gData.pRequestCode + (RequestID * sizeof(SHORT))), (SHORT)code);
+		return mem.bSuccess;
+	}
+
+	Status GetStatus()
+	{
+		return *(Status*)gData.pStatus;
+	}
+
+	BOOL SetPendingRequest(SIZE_T RequestId, BOOL bPendingRequest)
+	{
+		auto mem = WriteSharedMemory<BOOL>((PVOID)((PBYTE)gData.bPendingRequest + (RequestId * sizeof(BOOL))), bPendingRequest);
+		return mem.bSuccess;
+	}
+
+	BOOL havePendingRequest(SIZE_T RequestId, BOOL& bHaveRequest)
+	{
+		auto mem = ReadSharedMemory<BOOL>((PVOID)((PBYTE)gData.bPendingRequest + (RequestId * sizeof(BOOL))));
+
+		if (mem.bSuccess)
+			bHaveRequest = (Code)mem.data;
+
+		return mem.bSuccess;
+	}
+
+	BOOL GetRequestCode(SIZE_T RequestId, Code& code)
+	{
+		auto mem = ReadSharedMemory<SHORT>((PVOID)((PBYTE)gData.pRequestCode + (RequestId * sizeof(SHORT))));
+
+		if (mem.bSuccess)
+			code = (Code)mem.data;
+
+		return mem.bSuccess;
+	}
+
+	bool GetRequestData(SIZE_T RequestId, OperationData& oData)
+	{
+		auto mem = ReadSharedMemory<OperationData>((PVOID)((PBYTE)gData.pDataRequest + (RequestId * sizeof(OperationData))));
+
+		if (mem.bSuccess)
+			oData = mem.data;
+
+		return mem.bSuccess;
+	}
+
+	bool WriteResponse(SIZE_T RequestId, OperationData& pData)
+	{
+		auto mem = WriteSharedMemory<OperationData>((PVOID)((PBYTE)gData.pDataResponse + (RequestId * sizeof(OperationData))), pData);
+		return mem.bSuccess;
+	}
+
+	VOID Respond(SIZE_T RequestId)
+	{
+		BOOL bHaveRequest = false;
+		if (!havePendingRequest(RequestId, bHaveRequest))
+			return;
+
+		if (!bHaveRequest)
+			return;
+
+		OperationData oData;
+		GetRequestData(RequestId, oData);
+
+		Code cRequest;
+		GetRequestCode(RequestId, cRequest);
+
+		switch (cRequest)
+		{
+		case BaseRequest:
+			Process::GetBaseAddress(&oData);
+			break;
+
+		case SizeRequest:
+			Process::GetMainModuleSize(&oData);
+			break;
+
+		case PebRequest:
+			Process::GetPeb(&oData);
+			break;
+
+		case QIPRequest:
+			Process::QueryInformation(&oData);
+			break;
+
+		case CopyRequest:
+			Memory::CopyVirtualMemory(&oData);
+			break;
+
+		case AVMRequest:
+			Memory::AllocateVirtualMemory(&oData);
+			break;
+
+		case FVMRequest:
+			Memory::FreeVirtualMemory(&oData);
+			break;
+
+		case PVMRequest:
+			Memory::ProtectVirtualMemory(&oData);
+			break;
+
+		case QVMRequest:
+			Memory::QueryVirtualMemory(&oData);
+			break;
+
+		case ModuleRequest:
+			Process::GetModuleInfo(&oData);
+			break;
+
+		case IndexRequest:
+			Process::GetModuleInfoByIndex(&oData);
+			break;
+
+		case MouseRequest: 
+			Memory::mouseEvent(mouse_obj, &oData);
+			break;
+
+		case KeyboardRequest:
+			Memory::keyboardEvent(keyboard_obj, &oData);
+			break;
+
+		case SetCursorRequest:
+			Memory::setCursorPos(&oData);
+			break;
+
+		default:
+			SetPendingRequest(RequestId, false);
+			SetRequestCode(RequestId, Failure);
+			return;
+		}
+
+		oData.bComplete = true;
+		if (!WriteResponse(RequestId, oData))
+		{
+			SetPendingRequest(RequestId, false);
+			SetRequestCode(RequestId, Failure);
+			return;
+		}
+
+		SetPendingRequest(RequestId, false);
+		SetRequestCode(RequestId, Complete);
 	}
 
 	VOID Loop()
 	{
 		gProcess = Process::GetProcess(gData.ProcessId);
+
+		if (gProcess == nullptr)
+			return;
 
 		if (!mouse_obj.service_callback || !mouse_obj.mouse_device)
 		{
@@ -182,42 +220,24 @@ namespace SharedMemory
 				return;
 		}
 
-		if (gProcess == nullptr) {
-			return;
-		}
-
-		for (;;) {
-
-			if (*(DWORD*)((BYTE*)gProcess + ActiveThreadsOffset) == 1) {
+		for (;;)
+		{
+			if (*(DWORD*)((BYTE*)gProcess + ActiveThreadsOffset) == 1)
+			{
 				// We're the only active thread - the client must be trying to terminate
 				ObfDereferenceObject(gProcess);
 				return;
 			}
 
-			DWORD Status{ GetStatus() };
-
-			switch (Status) {
-			case Inactive: {
-				Utils::Sleep(50);
-			} break;
-
-			case Active: {
-				Utils::Sleep(1);
-			} break;
-
-			case Waiting: {
-				Respond();
-			} break;
-
-			case Exit: {
-				SetStatus(Inactive);
+			if (GetStatus() == Exit)
+			{
 				ObfDereferenceObject(gProcess);
 				return;
-			} break;
+			}
 
-			default: {
-				Utils::Sleep(50);
-			} break;
+			for (SIZE_T i = 0; i < numMemoryPools; ++i)
+			{
+				Respond(i);
 			}
 		}
 	}

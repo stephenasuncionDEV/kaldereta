@@ -83,6 +83,7 @@ namespace Utils {
 
 		return Match;
 	}
+
 	ULONG GetCPZ(PUCHAR Address, int mLen)
 	{
 		ldasm_data ld = { 0 };
@@ -97,6 +98,7 @@ namespace Utils {
 
 		return LenCount;
 	}
+
 	void GenerateTrampoline(IN PVOID FunctionAddress, OUT PVOID* TrampolineAddress) // Bypass For EAC,Vanguard and BE Made by Jenrix
 	{
 		UCHAR jmp_code_orifunc1[] = "\x90\xFF\x25\x00\x00\x00\x00\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF";
