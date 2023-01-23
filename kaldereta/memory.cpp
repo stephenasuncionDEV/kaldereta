@@ -335,7 +335,6 @@ bool mem::mouseEvent(MOUSE_OBJECT mouse_obj, long x, long y, USHORT button_flags
 	return true;
 }
 
-
 NTSTATUS mem::initKeyboard(PKEYBOARD_OBJECT keyboard_obj)
 {
 	UNICODE_STRING class_string;

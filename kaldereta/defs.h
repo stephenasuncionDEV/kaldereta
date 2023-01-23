@@ -318,7 +318,7 @@ typedef VOID
 	PMOUSE_INPUT_DATA InputDataStart,
 	PMOUSE_INPUT_DATA InputDataEnd,
 	PULONG InputDataConsumed
-);
+	);
 
 typedef VOID
 (*KeyboardClassServiceCallback)(
@@ -326,7 +326,7 @@ typedef VOID
 	PKEYBOARD_INPUT_DATA InputDataStart,
 	PKEYBOARD_INPUT_DATA InputDataEnd,
 	PULONG InputDataConsumed
-);
+	);
 
 typedef struct _MOUSE_OBJECT
 {

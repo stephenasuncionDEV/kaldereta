@@ -5,12 +5,11 @@ extern "C" NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING Reg
 	UNREFERENCED_PARAMETER(DriverObject);
 	UNREFERENCED_PARAMETER(RegistryPath);
 
-	DbgPrintEx(0, 0, "Kaldereta: Version 0.0.2\n");
-	DbgPrintEx(0, 0, "Kaldereta: Driver Loaded\n");
+	DbgPrintEx(0, 0, "Kaldereta: Function Hook Version\n");
 
 	if (hook::callKernelFunc(&hook::hookHandler))
 	{
-		DbgPrintEx(0, 0, "Kaldereta: Successfuly Hooked\n");
+		DbgPrintEx(0, 0, "Kaldereta: Driver Loaded\n");
 	}
 
 	return STATUS_SUCCESS;
