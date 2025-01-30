@@ -55,7 +55,3 @@ I was able to create this driver with the help of a bunch of sources. If you see
 * https://github.com/Zer0Mem0ry/ManualMap
 * https://github.com/nbqofficial/norsefire
 * https://www.unknowncheats.me/
-
-## License
-
-[GNU General Public License v3.0](https://github.com/stephenasuncionDEV/kaldereta/blob/main/LICENSE)
