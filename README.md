@@ -40,7 +40,7 @@ Create `Kernel Mode Drive, Empty (KMDF) project` with the following configuratio
 ||Spectre Mitigation: Disabled||Type of driver: KMDF|
 ||Teat Warnings as Errors: No|
 
-Once you've buit the driver, Load .sys file with [KDMapper](https://github.com/TheCruZ/kdmapper).
+Once you've built the driver, Load .sys file with [KDMapper](https://github.com/TheCruZ/kdmapper).
 
 ## Test
 
