@@ -48,8 +48,6 @@ To see logs from the driver itself, download [DebugView](https://learn.microsoft
 
 ## Credits
 
-I was able to create this driver with the help of a bunch of sources. If you see your source-code in the codebase of this repository, contact me to properly credit you.
-
 * https://www.youtube.com/c/NullTerminator
 * https://j00ru.vexillium.org/syscalls/win32k/64/
 * https://github.com/Zer0Mem0ry/ManualMap
